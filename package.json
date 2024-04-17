@@ -1,0 +1,29 @@
+{
+  "name": "deepgram-transcribe-folder",
+  "version": "1.0.0",
+  "description": "Use Deepgram Speech-to-text to transcribe each file in a folder, saving output to a Markdown file.",
+  "main": "index.js",
+  "scripts": {
+    "transcribe": "node ./index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/djscheuf/deepgram-transcribe-folder.git"
+  },
+  "keywords": [
+    "deepgram",
+    "speech",
+    "transcribe"
+  ],
+  "author": "Daniel Scheufler",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/djscheuf/deepgram-transcribe-folder/issues"
+  },
+  "homepage": "https://github.com/djscheuf/deepgram-transcribe-folder#readme",
+  "dependencies": {
+    "@deepgram/sdk": "^3.2.0",
+    "dotenv": "^16.4.5"
+  }
+}
