@@ -44,17 +44,41 @@ const saveToDisk = async (input) => {
 const inDir = "./in/"
 const files = fs.readdirSync(inDir); // read fileNames in input folder.
 
-const limiter = "202402"; // My Recorder names files by date of recording, starting with YYYYMM
+const limiter = "202408"; // My Recorder names files by date of recording, starting with YYYYMM
 const filteredFiles = files
   .filter(x=> x.startsWith(limiter)) // Limit Selections
   .map(x=>`${inDir}${x}`); // Properly provide Path
 
-// console.log(filteredFiles);
-const transcripts = filteredFiles.map(transcribeFile);
-Promise.all(transcripts);
+const toGroupBy7thChar = (agg, cur) => {
+  agg[cur[6]].push(cur);
+  return agg;
+}
 
-const namesAndTranscripts = filteredFiles.map(function(name, i) {
-    return {name, transcript:transcripts[i]};
+const batches = filteredFiles.reduce(toGroupBy7thChar,{"0":[], "1":[],"2":[],"3":[]});
+
+console.log(`All Batches: ${JSON.stringify(batches)}`);
+
+Object.keys(batches).forEach(key => {
+  console.log(` - - - - - Starting Batch: ${limiter} ${key} - - - - -`);
+  const theBatch = batches[key];
+  const batchTranscripts = theBatch.map(transcribeFile);
+  Promise.all(batchTranscripts);
+
+  const namesAndTranscripts = theBatch.map(function(name, i) {
+    return {name, transcript:batchTranscripts[i]};
   });
 
-namesAndTranscripts.map(saveToDisk);
+  namesAndTranscripts.map(saveToDisk);
+
+  console.log(` - - - - - Finished Batch: ${limiter} ${key} - - - - -`);
+})
+
+// console.log(filteredFiles);
+// const transcripts = filteredFiles.map(transcribeFile);
+// Promise.all(transcripts);
+
+// const namesAndTranscripts = filteredFiles.map(function(name, i) {
+//     return {name, transcript:transcripts[i]};
+//   });
+
+// namesAndTranscripts.map(saveToDisk);
