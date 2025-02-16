@@ -4,26 +4,30 @@ const fs = require("fs");
 require('dotenv').config()
 const { createClient } = require("@deepgram/sdk");
 
+// TODO - Find a way to limit this to no more that 50 concurrent requests...
 const transcribeFile = async (fileName) => {
   // STEP 1: Create a Deepgram client using the API key
-  
-  const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+  try{
+    const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
 
-  // STEP 2: Call the transcribeFile method with the audio payload and options
-  const { result, error } = await deepgram.listen.prerecorded.transcribeFile(
-    // path to the audio file
-    fs.readFileSync(fileName),
-    // STEP 3: Configure Deepgram options for audio analysis
-    {
-      model: "nova-2",
-      smart_format: true,
+    // STEP 2: Call the transcribeFile method with the audio payload and options
+    const { result, error } = await deepgram.listen.prerecorded.transcribeFile(
+      // path to the audio file
+      fs.readFileSync(fileName),
+      // STEP 3: Configure Deepgram options for audio analysis
+      {
+        model: "nova-2",
+        smart_format: true,
+      }
+    );
+
+    if (error) throw error;
+    // STEP 4: Print the results
+    if (!error) {
+      return result.results.channels[0].alternatives[0].transcript;
     }
-  );
-
-  if (error) throw error;
-  // STEP 4: Print the results
-  if (!error) {
-    return result.results.channels[0].alternatives[0].transcript;
+  } catch (ex) {
+    return ex.message;
   }
 };
 
@@ -44,7 +48,7 @@ const saveToDisk = async (input) => {
 const inDir = "./in/"
 const files = fs.readdirSync(inDir); // read fileNames in input folder.
 
-const limiter = "202408"; // My Recorder names files by date of recording, starting with YYYYMM
+const limiter = "2025"; // My Recorder names files by date of recording, starting with YYYYMM
 const filteredFiles = files
   .filter(x=> x.startsWith(limiter)) // Limit Selections
   .map(x=>`${inDir}${x}`); // Properly provide Path
@@ -55,6 +59,8 @@ const toGroupBy7thChar = (agg, cur) => {
 }
 
 const batches = filteredFiles.reduce(toGroupBy7thChar,{"0":[], "1":[],"2":[],"3":[]});
+
+// const batches = {"0":filteredFiles};
 
 console.log(`All Batches: ${JSON.stringify(batches)}`);
 
@@ -73,12 +79,12 @@ Object.keys(batches).forEach(key => {
   console.log(` - - - - - Finished Batch: ${limiter} ${key} - - - - -`);
 })
 
-// console.log(filteredFiles);
-// const transcripts = filteredFiles.map(transcribeFile);
-// Promise.all(transcripts);
+console.log(filteredFiles);
+const transcripts = filteredFiles.map(transcribeFile);
+Promise.all(transcripts);
 
-// const namesAndTranscripts = filteredFiles.map(function(name, i) {
-//     return {name, transcript:transcripts[i]};
-//   });
+const namesAndTranscripts = filteredFiles.map(function(name, i) {
+    return {name, transcript:transcripts[i]};
+  });
 
-// namesAndTranscripts.map(saveToDisk);
+namesAndTranscripts.map(saveToDisk);
