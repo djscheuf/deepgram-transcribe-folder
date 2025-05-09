@@ -4,24 +4,24 @@ const fs = require("fs");
 require('dotenv').config()
 const { createClient } = require("@deepgram/sdk");
 
-// TODO - Find a way to limit this to no more that 50 concurrent requests...
-const transcribeFile = async (fileName) => {
-  // STEP 1: Create a Deepgram client using the API key
-  try{
-    const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+// Dependencies
+const createDeepgramClient = () => createClient(process.env.DEEPGRAM_API_KEY);
+const readFileSync = (fileName) => fs.readFileSync(fileName);
+const writeFileSync = (filePath, data) => fs.writeFileSync(filePath, data);
+const readdirSync = (dir) => fs.readdirSync(dir);
 
-    // STEP 2: Call the transcribeFile method with the audio payload and options
-    const { result, error } = await deepgram.listen.prerecorded.transcribeFile(
-      // path to the audio file
-      fs.readFileSync(fileName),
-      // STEP 3: Configure Deepgram options for audio analysis
-      {
-        model: "nova-2",
-        smart_format: true,
-      }
-    );
-
-    if (error) throw error;
+// Transcription
+const transcribeContentWithTool = (readContentSync, transcriptionClient) => async (fileName) => {
+  try {
+  const content = readContentSync(fileName);
+  const { result, error } = await transcriptionClient.listen.prerecorded.transcribeFile(
+    content,
+    {
+      model: "nova-2",
+      smart_format: true,
+    }
+  );
+  if (error) throw error;
     // STEP 4: Print the results
     if (!error) {
       return result.results.channels[0].alternatives[0].transcript;
@@ -29,11 +29,11 @@ const transcribeFile = async (fileName) => {
   } catch (ex) {
     return ex.message;
   }
-};
-
+}
+const transcribeFileWithDeepgram = transcribeContentWithTool(readFileSync, createDeepgramClient());
 
 const outDir = "out";
-const saveToDisk = async (input) => {
+const saveTo = (writeContentSync) = async (input) => {
     console.log(input)
     const {name,transcript} = input;
     const justName = path.parse(name).name;
@@ -41,12 +41,12 @@ const saveToDisk = async (input) => {
     const outPath = path.join(outDir,outName);
     const contents = await transcript;
     console.log(`Writing contents to: ${outPath}`)
-    await fs.writeFileSync(outPath,contents);
+    await writeContentSync(outPath,contents);
 }
-
+const saveToDisk = saveTo(writeFileSync);
 
 const inDir = "./in/"
-const files = fs.readdirSync(inDir); // read fileNames in input folder.
+const files = readdirSync(inDir); // read fileNames in input folder.
 
 const limiter = "2025"; // My Recorder names files by date of recording, starting with YYYYMM
 const filteredFiles = files
