@@ -1,8 +1,10 @@
-const path = require('path');
-const fs = require("fs");
+import path from 'path';
+import fs from 'fs';
+import dotenv from 'dotenv';
+import { createClient } from "@deepgram/sdk";
+import { CLIENT_RENEG_WINDOW } from 'tls';
 
-require('dotenv').config()
-const { createClient } = require("@deepgram/sdk");
+dotenv.config()
 
 // Dependencies
 const createDeepgramClient = () => createClient(process.env.DEEPGRAM_API_KEY);
@@ -33,7 +35,7 @@ const transcribeContentWithTool = (readContentSync, transcriptionClient) => asyn
 const transcribeFileWithDeepgram = transcribeContentWithTool(readFileSync, createDeepgramClient());
 
 const outDir = "out";
-const saveTo = (writeContentSync) = async (input) => {
+const saveTo = (writeContentSync) => async (input) => {
     console.log(input)
     const {name,transcript} = input;
     const justName = path.parse(name).name;
@@ -48,7 +50,20 @@ const saveToDisk = saveTo(writeFileSync);
 const inDir = "./in/"
 const files = readdirSync(inDir); // read fileNames in input folder.
 
-const limiter = "2025"; // My Recorder names files by date of recording, starting with YYYYMM
+// Get limiter from command line arguments or use default
+const DEFAULT_LIMITER = "2025080";
+const limiter = process.argv[2] || DEFAULT_LIMITER;
+
+// Show usage if help is requested
+if (limiter === '--help' || limiter === '-h') {
+  console.log('Usage: node index.js [limiter]');
+  console.log('  limiter: Optional prefix to filter files (default: 2025080)');
+  console.log('Example: node index.js 202407');
+  process.exit(0);
+}
+
+console.log(`Using limiter: ${limiter}`);
+
 const filteredFiles = files
   .filter(x=> x.startsWith(limiter)) // Limit Selections
   .map(x=>`${inDir}${x}`); // Properly provide Path
@@ -64,27 +79,29 @@ const batches = filteredFiles.reduce(toGroupBy7thChar,{"0":[], "1":[],"2":[],"3"
 
 console.log(`All Batches: ${JSON.stringify(batches)}`);
 
-Object.keys(batches).forEach(key => {
-  console.log(` - - - - - Starting Batch: ${limiter} ${key} - - - - -`);
-  const theBatch = batches[key];
-  const batchTranscripts = theBatch.map(transcribeFile);
-  Promise.all(batchTranscripts);
+// Object.keys(batches).forEach(key => {
+//   console.log(` - - - - - Starting Batch: ${limiter} ${key} - - - - -`);
+//   const theBatch = batches[key];
+//   const batchTranscripts = theBatch.map(transcribeFileWithDeepgram);
+//   Promise.all(batchTranscripts);
 
-  const namesAndTranscripts = theBatch.map(function(name, i) {
-    return {name, transcript:batchTranscripts[i]};
-  });
+//   const namesAndTranscripts = theBatch.map(function(name, i) {
+//     return {name, transcript:batchTranscripts[i]};
+//   });
 
-  namesAndTranscripts.map(saveToDisk);
+//   namesAndTranscripts.map(saveToDisk);
 
-  console.log(` - - - - - Finished Batch: ${limiter} ${key} - - - - -`);
-})
+//   console.log(` - - - - - Finished Batch: ${limiter} ${key} - - - - -`);
+// })
 
 console.log(filteredFiles);
-const transcripts = filteredFiles.map(transcribeFile);
-Promise.all(transcripts);
+const transcripts = filteredFiles.map(transcribeFileWithDeepgram);
+await Promise.all(transcripts);
 
 const namesAndTranscripts = filteredFiles.map(function(name, i) {
     return {name, transcript:transcripts[i]};
   });
+
+console.log(namesAndTranscripts);
 
 namesAndTranscripts.map(saveToDisk);
