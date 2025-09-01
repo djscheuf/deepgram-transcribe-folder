@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_UID: 1000 # replace with your user id
+        USER_GID: 100 # replace with your group id
+    volumes:
+      - app_data:/data
+      - app:/app
+    command: sleep infinity
+
+volumes:
+  app_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ../data
+      o: bind
+  app:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}
+      o: bind
+  
