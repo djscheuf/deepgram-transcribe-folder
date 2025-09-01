@@ -94,8 +94,8 @@ def group_by_seventh_char(files: List[str]) -> Dict[str, List[str]]:
     return groups
 
 async def transcribe_folder(
-    input_dir: str = "./in",
-    output_dir: str = "./out",
+    input_dir: str = "/data/in",
+    output_dir: str = "/data/transcriptions",
     prefix: str = "2025080",
     batch_size: int = 4
 ) -> None:
@@ -146,8 +146,8 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Transcribe audio files using Deepgram')
-    parser.add_argument('--input', '-i', default='./in', help='Input directory containing audio files')
-    parser.add_argument('--output', '-o', default='./out', help='Output directory for transcriptions')
+    parser.add_argument('--input', '-i', default='/data/in', help='Input directory containing audio files')
+    parser.add_argument('--output', '-o', default='/data/out', help='Output directory for transcriptions')
     parser.add_argument('--prefix', '-p', default='2025080', 
                        help='Optional prefix to filter files (default: 2025080)')
     parser.add_argument('--batch-size', '-b', type=int, default=4,
